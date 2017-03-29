@@ -1,0 +1,74 @@
+#include <stdio.h>
+#define BUFFERSIZE 512
+#define BAUD 115200
+#define UART_READ_ADDR 
+#define INTERRUPT_VECTOR  
+//_____the UART_READ_ADDR and INTERRUPT_VECTOR will be defined depend on the chip model
+typedef unsigned int uint8;
+typedef unsigned int rb_des_t;
+static rb_des_t rb_des;
+static char _men[8];
+//_____ Create a buffer structure_____
+struct buffer
+{
+ 	uint8 *PtrBuf;
+	 size_t Start;
+	 size_t End;
+	 size_t n_element;
+	 size_t s_element;
+};
+
+
+
+struct buffer _ptRing[BUFFERSIZE];
+
+int main (int argc, char *argv[])
+{
+
+	RingBufferInit();
+
+
+}
+//_____ Init the Ring Buffer_____
+int RingBufferInit()
+{
+	static int n=0;
+	if (n < BUFFERSIZE)
+	{
+	_ptRing[n].Start = 0;
+	_ptRing[n].End = 0;
+	}
+}
+
+//_____ Get the Ring Buffer_____
+int RingBufferGet(rb_des_t rb_des,void *data)
+{
+const size_t offset = (_ptRing[rb_des].End & (_ptRing[rb_des].n_element - 1)) * _ptRing[rb_des].s_element;
+ memcpy(data, &(_ptRing[rb_des].PtrBuf[offset]), _ptRing[rb_des].s_element);
+}
+
+//_____ Put the Ring Buffer_____
+int RingBufferPut(rb_des_t rb_des,void *data)
+{
+const size_t offset = (_ptRing[rb_des].Start & (_ptRing[rb_des].n_element - 1)) * _ptRing[rb_des].s_element;
+memcpy(&(_ptRing[rb_des].PtrBuf[offset]), data, _ptRing[rb_des].s_element);
+}
+//_____ interrupt_____
+__attribute__((interrupt(INTERRUPT_VECTOR))) void isr(void)
+{
+    if (INTERRUPT_VECTOR) {
+        const char data = UART_READ_ADDR;
+        ring_buffer_put(rb_des, &data);
+    }
+}
+//_____ Get UART CAHR_____
+int GetChar()
+{
+ char data = -1;
+ RingBufferGet(rb_des, &data);
+
+return data;
+
+
+}
+
